@@ -33,5 +33,21 @@ int main(){
     std::cout<<"rj: "<<rj[i]<<std::endl;
   }
   std::cout<<"A: "<<A<<std::endl;
+
+  std::vector<int> S;
+  std::vector<int> C;
+
+  S.push_back(rj[0]);
+  C.push_back(S[0] + pj[0]);
+  
+  for(int i = 1; i < n; i++){
+    S.push_back(C[i-1] + rj[i]);
+    C.push_back(S[i] + pj[i]);
+    std::cout<<"S"<<i<<" "<<S[i]<<" ";
+    std::cout<<"C"<<i<<" "<<C[i]<<std::endl;
+  }
+
   return 0;
+  
+
 }
