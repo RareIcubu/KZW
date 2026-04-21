@@ -64,11 +64,17 @@ int main() {
     auto [schrageHeap_Cmax, schrageHeap_pi] = SchrageHeap(n, r, p, q);
     displaySchedule("SCHRAGE (Wersja na kopcach)", n, schrageHeap_pi, r, p, q);
 
+    // --- CARLIER (WŁAŚCIWY ALGORYTM OPTYMALNY) ---
     int UB = std::numeric_limits<int>::max(); 
     std::vector<int> pi_star;                
     
     Carlier(n, r, p, q, UB, pi_star);
-    displaySchedule("CARLIER (Optymalny)", n, pi_star, r, p, q);
+    displaySchedule("CARLIER (Optymalny bez przerw)", n, pi_star, r, p, q);
+
+    // --- SCHRAGE PMTN (TYLKO DOLNE OGRANICZENIE) ---
+    int schrage_cmax_pmtn = SchragePMTN(n, r, p, q);
+    std::cout << "\n--- SCHRAGE PMTN (Z przerwaniami) ---" << std::endl;
+    std::cout << ">> Oczekiwany (teoretyczny) C_max: " << schrage_cmax_pmtn<<std::endl; 
 
     return 0;
 }
