@@ -22,26 +22,22 @@ int nextInt(mt19937& gen, int min_val, int max_val) {
 
 // Metoda generowania instancji zgodnie z sekcją 5 
 vector<Task> generateInstances(int n, int seed, bool x_is_A) {
-    mt19937 gen(seed); // 1. init(Z) 
+    mt19937 gen(seed);
     vector<Task> tasks(n);
     int A = 0;
 
-    // 2. Dla każdego j: p_j = nextInt(1, 29)
     for (int i = 0; i < n; ++i) {
         tasks[i].id = i + 1;
         tasks[i].p = nextInt(gen, 1, 29);
-        A += tasks[i].p; // 3. A = suma p_i 
+        A += tasks[i].p;
     }
 
-    // 4. Dla każdego j: w_j = nextInt(1, 9)
     for (int i = 0; i < n; ++i) {
         tasks[i].w = nextInt(gen, 1, 9);
     }
 
-    // Ustalenie parametru X 
     int X = x_is_A ? A : 29;
 
-    // 5. Dla każdego j: d_j = nextInt(1, X)
     for (int i = 0; i < n; ++i) {
         tasks[i].d = nextInt(gen, 1, X);
     }
@@ -49,58 +45,116 @@ vector<Task> generateInstances(int n, int seed, bool x_is_A) {
     return tasks;
 }
 
-// Funkcja obliczająca sumę czasów zadań w danym podproblemie z wykorzystaniem operacji bitowych
+// --- ALGORYTM ZACHŁANNY ---
+// Sortowanie po żądanych terminach zakończenia
+void solve_greedy(vector<Task> tasks) {
+    sort(tasks.begin(), tasks.end(), [](const Task& a, const Task& b) {
+        return a.d < b.d; 
+    });
+
+    long long current_time = 0;
+    long long current_cost = 0;
+    vector<int> schedule;
+
+    for (const auto& task : tasks) {
+        current_time += task.p;
+        long long tardiness = max(0LL, current_time - task.d);
+        current_cost += tardiness * task.w;
+        schedule.push_back(task.id);
+    }
+
+    cout << "--- METODA ZACHLANNA ---\n";
+    cout << "Minimalna wazona suma opoznien (F): " << current_cost << "\n";
+    cout << "Optymalna kolejnosc zadan (pi): ";
+    for (int id : schedule) cout << id << " ";
+    cout << "\n\n";
+}
+
+// --- PRZEGLĄD ZUPEŁNY (BRUTE FORCE) ---
+// Sprawdzenie wszystkich możliwych kombinacji
+void solve_brute_force(vector<Task> tasks) {
+    sort(tasks.begin(), tasks.end(), [](const Task& a, const Task& b) {
+        return a.id < b.id;
+    });
+
+    long long min_cost = LLONG_MAX;
+    vector<int> best_schedule;
+
+    do {
+        long long current_time = 0;
+        long long current_cost = 0;
+
+        for (const auto& task : tasks) {
+            current_time += task.p;
+            long long tardiness = max(0LL, current_time - task.d);
+            current_cost += tardiness * task.w;
+        }
+
+        if (current_cost < min_cost) {
+            min_cost = current_cost;
+            best_schedule.clear();
+            for (const auto& task : tasks) {
+                best_schedule.push_back(task.id);
+            }
+        }
+    } while (next_permutation(tasks.begin(), tasks.end(), [](const Task& a, const Task& b) {
+        return a.id < b.id;
+    }));
+
+    cout << "--- PRZEGLAD ZUPELNY (Brute Force) ---\n";
+    cout << "Minimalna wazona suma opoznien (F): " << min_cost << "\n";
+    cout << "Optymalna kolejnosc zadan (pi): ";
+    for (int id : best_schedule) cout << id << " ";
+    cout << "\n\n";
+}
+
+// --- PROGRAMOWANIE DYNAMICZNE ---
 long long calculate_sum_p(int mask, const vector<Task>& tasks) {
     long long sum = 0;
     for (int i = 0; i < tasks.size(); ++i) {
-        if ((mask >> i) & 1) { // Sprawdzenie czy zadanie jest w zbiorze
+        if ((mask >> i) & 1) { 
             sum += tasks[i].p;
         }
     }
     return sum;
 }
 
-// Główna funkcja rozwiązująca problem 1||Sum w_j T_j
-void solve(const vector<Task>& tasks) {
+void solve_dp(const vector<Task>& tasks) {
     int n = tasks.size();
-    int num_subproblems = 1 << n; // 2^n podproblemów, przesunięcie bitowe 
+    int num_subproblems = 1 << n; 
     
-    // Inicjalizacja tablicy memory o rozmiarze 2^n [cite: 110, 112]
     vector<long long> memory(num_subproblems, LLONG_MAX);
     vector<int> last_task(num_subproblems, -1); 
 
-    memory[0] = 0; // Wartość dla pustego zbioru wynosi 0
+    memory[0] = 0; 
 
-    // Iteracyjne programowanie dynamiczne 
     for (int mask = 1; mask < num_subproblems; ++mask) {
         long long current_sum_p = calculate_sum_p(mask, tasks); 
 
         for (int j = 0; j < n; ++j) {
-            if ((mask >> j) & 1) { // Jeśli j-te zadanie jest w masce (podproblemie)
-                int prev_mask = mask ^ (1 << j); // Bitowa różnica symetryczna - zbiór bez zadania j
+            if ((mask >> j) & 1) { 
+                int prev_mask = mask ^ (1 << j); 
                 
-                // Obliczanie kary dla zadania j jako ostatniego: max{sum - d_j, 0} * w_j + memory(D \ {j})
                 long long tardiness = max(0LL, current_sum_p - tasks[j].d);
                 long long current_cost = tardiness * tasks[j].w + memory[prev_mask];
 
-                // Zapamiętywanie minimum dla podproblemu 
                 if (current_cost < memory[mask]) {
                     memory[mask] = current_cost;
-                    last_task[mask] = j; // Ślad do odtworzenia kolejności (Backtracking)
+                    last_task[mask] = j; 
                 }
             }
         }
     }
 
-    cout << "Minimalna wazona suma opoznien (F): " << memory[num_subproblems - 1] << endl;
+    cout << "--- PROGRAMOWANIE DYNAMICZNE ---\n";
+    cout << "Minimalna wazona suma opoznien (F): " << memory[num_subproblems - 1] << "\n";
 
-    // Odtwarzanie kolejności (Backtracking) 
     vector<int> schedule;
     int curr_mask = num_subproblems - 1;
     while (curr_mask > 0) {
         int task_idx = last_task[curr_mask];
         schedule.push_back(tasks[task_idx].id);
-        curr_mask ^= (1 << task_idx); // Usuwamy zadanie ze zbioru
+        curr_mask ^= (1 << task_idx); 
     }
     reverse(schedule.begin(), schedule.end());
 
@@ -114,6 +168,7 @@ void printTasks(const vector<Task>& tasks) {
     for (const auto& t : tasks) {
         cout << "Zadanie " << t.id << ": p=" << t.p << ", w=" << t.w << ", d=" << t.d << "\n";
     }
+    cout << "\n";
 }
 
 int main() {
@@ -123,15 +178,23 @@ int main() {
     cout << "Podaj ziarno generatora (Z): ";
     cin >> seed;
 
-    cout << "\n=== TEST 1: Zakres zadan d_j = X = A ===\n";
+    cout << "\n========================================\n";
+    cout << "=== TEST 1: Zakres zadan d_j = X = A ===\n";
+    cout << "========================================\n";
     vector<Task> tasks_A = generateInstances(n, seed, true);
     printTasks(tasks_A);
-    solve(tasks_A);
+    solve_greedy(tasks_A);
+    solve_brute_force(tasks_A);
+    solve_dp(tasks_A);
 
-    cout << "\n=== TEST 2: Zakres zadan d_j = X = 29 ===\n";
+    cout << "\n=========================================\n";
+    cout << "=== TEST 2: Zakres zadan d_j = X = 29 ===\n";
+    cout << "=========================================\n";
     vector<Task> tasks_29 = generateInstances(n, seed, false);
     printTasks(tasks_29);
-    solve(tasks_29);
+    solve_greedy(tasks_29);
+    solve_brute_force(tasks_29);
+    solve_dp(tasks_29);
 
     return 0;
 }
