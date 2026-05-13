@@ -9,9 +9,9 @@ using namespace std;
 // Struktura przechowująca parametry zadania
 struct Task {
     int id;
-    int p; // czas wykonania [cite: 25]
-    int w; // waga/współczynnik kary [cite: 26]
-    int d; // żądany termin zakończenia [cite: 26]
+    int p; // czas wykonania 
+    int w; // waga/współczynnik kary 
+    int d; // żądany termin zakończenia 
 };
 
 // Funkcja pomocnicza symulująca nextInt(min, max)
@@ -20,20 +20,20 @@ int nextInt(mt19937& gen, int min_val, int max_val) {
     return dist(gen);
 }
 
-// Metoda generowania instancji zgodnie z sekcją 5 [cite: 60, 61]
+// Metoda generowania instancji zgodnie z sekcją 5 
 vector<Task> generateInstances(int n, int seed, bool x_is_A) {
-    mt19937 gen(seed); // 1. init(Z) [cite: 62]
+    mt19937 gen(seed); // 1. init(Z) 
     vector<Task> tasks(n);
     int A = 0;
 
-    // 2. Dla każdego j: p_j = nextInt(1, 29) [cite: 63, 64]
+    // 2. Dla każdego j: p_j = nextInt(1, 29)
     for (int i = 0; i < n; ++i) {
         tasks[i].id = i + 1;
         tasks[i].p = nextInt(gen, 1, 29);
-        A += tasks[i].p; // 3. A = suma p_i [cite: 65]
+        A += tasks[i].p; // 3. A = suma p_i 
     }
 
-    // 4. Dla każdego j: w_j = nextInt(1, 9) [cite: 67, 68]
+    // 4. Dla każdego j: w_j = nextInt(1, 9)
     for (int i = 0; i < n; ++i) {
         tasks[i].w = nextInt(gen, 1, 9);
     }
@@ -41,7 +41,7 @@ vector<Task> generateInstances(int n, int seed, bool x_is_A) {
     // Ustalenie parametru X 
     int X = x_is_A ? A : 29;
 
-    // 5. Dla każdego j: d_j = nextInt(1, X) [cite: 69, 70]
+    // 5. Dla każdego j: d_j = nextInt(1, X)
     for (int i = 0; i < n; ++i) {
         tasks[i].d = nextInt(gen, 1, X);
     }
