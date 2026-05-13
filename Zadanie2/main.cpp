@@ -38,19 +38,35 @@ int calculate_cmax(const vector<int>& order, const vector<vector<int>>& p) {
     return C[m - 1][n_current - 1];
 }
 
-// Algorytm Johnsona (dedykowany dla m=2)
+// Zmodyfikowany Algorytm Johnsona (obsługa m >= 2 poprzez maszyny wirtualne)
 vector<int> johnson(const vector<vector<int>>& p) {
+    int m = p.size();
     int n = p[0].size();
+    
+    // Tworzenie dwóch maszyn wirtualnych
+    vector<vector<int>> p_virtual(2, vector<int>(n, 0));
+    if (m == 2) {
+        p_virtual = p;
+    } else {
+        for (int j = 0; j < n; ++j) {
+            // Maszyna wirtualna 1: suma od 1 do m-1
+            for (int i = 0; i < m - 1; ++i) p_virtual[0][j] += p[i][j];
+            // Maszyna wirtualna 2: suma od 2 do m
+            for (int i = 1; i < m; ++i) p_virtual[1][j] += p[i][j];
+        }
+    }
+
     vector<int> order(n);
     vector<bool> visited(n, false);
     int left = 0, right = n - 1;
 
+    // Klasyczny mechanizm Johnsona na maszynach wirtualnych
     for (int step = 0; step < n; ++step) {
         int min_val = 1e9, min_job = -1, min_machine = -1;
         for (int j = 0; j < n; ++j) {
             if (!visited[j]) {
-                if (p[0][j] < min_val) { min_val = p[0][j]; min_job = j; min_machine = 0; }
-                if (p[1][j] < min_val) { min_val = p[1][j]; min_job = j; min_machine = 1; }
+                if (p_virtual[0][j] < min_val) { min_val = p_virtual[0][j]; min_job = j; min_machine = 0; }
+                if (p_virtual[1][j] < min_val) { min_val = p_virtual[1][j]; min_job = j; min_machine = 1; }
             }
         }
         visited[min_job] = true;
@@ -166,10 +182,10 @@ vector<int> branch_and_bound(const vector<vector<int>>& p, int& best_cmax) {
     vector<int> N(n);
     iota(N.begin(), N.end(), 0);
     
-    // Inicjalizacja UB za pomocą permutacji naturalnej zamiast nieskończoności
-    vector<int> natural_pi = N;
-    best_cmax = calculate_cmax(natural_pi, p);
-    vector<int> best_pi = natural_pi;
+    // Zmiana optymalizacyjna: Inicjalizacja UB za pomocą heurystyki Johnsona
+    vector<int> init_pi = johnson(p);
+    best_cmax = calculate_cmax(init_pi, p);
+    vector<int> best_pi = init_pi;
     
     vector<int> pi;
     bnb_recursive(pi, N, p, best_cmax, best_pi);
@@ -196,12 +212,9 @@ int main() {
     
     cout << "\n--- Wyniki ---\n";
 
-    if (m == 2) {
-        vector<int> order_johnson = johnson(p);
-        cout << "Johnson Cmax:\t\t" << calculate_cmax(order_johnson, p) << "\n";
-    } else {
-        cout << "Johnson Cmax:\t\tN/A (algorytm zaimplementowany tylko dla m=2)\n";
-    }
+    // Johnson teraz działa dla każdego 'm'
+    vector<int> order_johnson = johnson(p);
+    cout << "Johnson Cmax (Heurystyka):\t" << calculate_cmax(order_johnson, p) << "\n";
 
     int bf_cmax;
     vector<int> order_bf = brute_force_tree(p, bf_cmax);
@@ -209,7 +222,7 @@ int main() {
 
     int bnb_cmax;
     vector<int> order_bnb = branch_and_bound(p, bnb_cmax);
-    cout << "Branch and Bound Cmax:\t" << bnb_cmax << "\n";
+    cout << "Branch and Bound Cmax:\t\t" << bnb_cmax << "\n";
 
     return 0;
 }
